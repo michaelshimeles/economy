@@ -8,10 +8,20 @@ import {
 
 export const players = pgTable("players", {
     id: serial("id").primaryKey(),
-    name: varchar("name", { length: 255 }).notNull(),
+    playerId: varchar("player_id", { length: 255 }).notNull(),
+    firstName: varchar("first_name", { length: 255 }).notNull(),
+    lastName: varchar("last_name", { length: 255 }).notNull(),
+    weight: integer("weight").notNull(),
+    height: integer("height").notNull(),
+    hairColor: varchar("hair_color", { length: 255 }).notNull(),
+    eyesColor: varchar("eyes_color", { length: 255 }).notNull(),
+    hairStyle: varchar("hair_style", { length: 255 }).notNull(),
+    skinColor: varchar("skin_color", { length: 255 }).notNull(),
+    sex: varchar("sex", { length: 255 }).notNull(),
+    birthDate: timestamp("birth_date").notNull(),
+    jobId: integer("job_id").notNull(),
     cash: integer("cash").default(500).notNull(),
     bank: integer("bank").default(1000).notNull(),
-    jobId: integer("job_id"),
 });
 
 export const jobs = pgTable("jobs", {

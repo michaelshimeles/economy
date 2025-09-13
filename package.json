@@ -6,6 +6,7 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
+    "@elysiajs/openapi": "^1.3.11",
     "@neondatabase/serverless": "^1.0.1",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",

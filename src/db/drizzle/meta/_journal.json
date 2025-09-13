@@ -8,6 +8,13 @@
       "when": 1757288423865,
       "tag": "0000_kind_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1757739437504,
+      "tag": "0001_solid_joystick",
+      "breakpoints": true
     }
   ]
 }
