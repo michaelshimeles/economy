@@ -2,6 +2,7 @@ import { t } from 'elysia'
 
 export namespace PlayerModel {
     export const Player = t.Object({
+      playerId: t.String(),
       firstName: t.String(),
       lastName: t.String(),
       weight: t.Number(),

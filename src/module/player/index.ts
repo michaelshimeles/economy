@@ -1,16 +1,22 @@
 import { eq } from "drizzle-orm";
+import type { Static } from "elysia";
 import { Elysia } from "elysia";
 import db from "../../db/db";
 import { players } from "../../db/schema";
 import { PlayerModel } from "./model";
+import { createPlayer, getAllPlayers, getPlayer, updatePlayer } from "./service";
 
-type Player = typeof PlayerModel.Player
+type Player = Static<typeof PlayerModel.Player>
 
 export const player = new Elysia()
   .get("/", () => "GTA RP Economy")
   .get("/players", async () => {
-    const allPlayers = await db.select().from(players);
-    return { success: true, players: allPlayers, message: "Players fetched successfully" };
+    try {
+      const allPlayers = await getAllPlayers();
+      return allPlayers;
+    } catch (error) {
+      return error;
+    }
   })
   .post("/players/create", async ({ body }: { body: Player }) => {
     const { firstName, lastName, weight, height, hairColor, eyesColor, hairStyle, skinColor, sex, birthDate, jobId, cash, bank } = body;
@@ -29,7 +35,8 @@ export const player = new Elysia()
       if (Number.isNaN(parsedBirthDate.valueOf())) {
         return { success: false, message: "Invalid birthDate. Use ISO string (e.g. 1990-05-15) or epoch ms." };
       }
-      const player = await db.insert(players).values({
+
+      const player = await createPlayer({
         playerId,
         firstName,
         lastName,
@@ -44,43 +51,40 @@ export const player = new Elysia()
         cash,
         bank,
         jobId,
-      }).returning();
+      });
 
-      return {
-        success: true,
-        player: player[0],
-        message: "Player created successfully"
-      };
+      return player;
     } catch (error) {
       console.error("Failed to create player", error);
-      return { success: false, message: "Failed to create player", error: error };
+      return error;
     }
 
   })
   .get("/players/get/:id", async ({ params }: { params: { id: string } }) => {
     const { id } = params;
-
     // Get player from the database
     try {
-      const player = await db.select()
-        .from(players).where(eq(players.id, parseInt(id)));
-
-      return { success: true, player: player[0], message: "Player fetched successfully" };
+      const player = await getPlayer(id);
+      return player;
     } catch (error) {
-      return { success: false, message: "Failed to get player", error: error };
+      return error;
     }
 
   })
   .post("/players/update/:id", async ({ params, body }: { params: { id: string }, body: Player }) => {
     const { id } = params;
-    const { firstName, lastName, weight, hairColor, eyesColor, hairStyle } = body;
+    const { firstName, lastName, weight, hairColor, eyesColor, hairStyle, skinColor, sex, birthDate, jobId, cash, bank } = body;
 
-    try {
-      const player = await db.update(players).set({ firstName, lastName, weight, hairColor, eyesColor, hairStyle }).where(eq(players.id, parseInt(id)));
-      return { success: true, player, message: "Player updated successfully" };
-    } catch (error) {
-      return { success: false, message: "Failed to update player", error: error };
+    const parsedBirthDate = new Date(birthDate as unknown as string);
+    if (Number.isNaN(parsedBirthDate.valueOf())) {
+      return { success: false, message: "Invalid birthDate. Use ISO string (e.g. 1990-05-15) or epoch ms." };
     }
 
+    try {
+      const player = await updatePlayer(id, { firstName, lastName, weight, hairColor, eyesColor, hairStyle, skinColor, sex, birthDate: parsedBirthDate, jobId, cash, bank });
+      return player
+    } catch (error) {
+      return error;
+    }
   })
 
