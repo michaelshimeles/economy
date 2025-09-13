@@ -12,7 +12,7 @@ export namespace PlayerModel {
       hairStyle: t.String(),
       skinColor: t.String(),
       sex: t.String(),
-      birthDate: t.String(),
+      birthDate: t.Date(),
       jobId: t.Number(),
       cash: t.Number(),
       bank: t.Number(),

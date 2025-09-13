@@ -35,6 +35,6 @@ export const transactions = pgTable("transactions", {
     playerId: integer("player_id").notNull(),
     amount: integer("amount").notNull(),
     type: varchar("type", { length: 50 }).notNull(), // deposit, withdraw, transfer, paycheck
-    metadata: varchar("metadata", { length: 255 }),
+    metadata: varchar("metadata", { length: 255 }),  // store details: toUser, fromUser, etc
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
