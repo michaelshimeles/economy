@@ -1,5 +1,7 @@
 import { Elysia } from "elysia";
 import { player } from "./module/player";
+import { government } from "./module/government";
+import { jobs } from "./module/job";
 import { openapi } from "@elysiajs/openapi";
 
 const app =
@@ -8,7 +10,10 @@ const app =
         normalize: true
     })
         .use(openapi())
-        .use(player).listen(3000);
+        .use(player)
+        .use(government)
+        .use(jobs)
+        .listen(3000);
 
 
 console.log(
