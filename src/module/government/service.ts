@@ -1,6 +1,7 @@
 import db from "../../db/db";
 import { bankAccounts, governmentPolicies, governments, players } from "../../db/schema";
 import { desc, eq } from "drizzle-orm";
+import { logTransaction } from "../economy/service";
 
 // ✅ Get current government economic policy (latest one)
 export const getCurrentPolicy = async () => {
@@ -57,50 +58,64 @@ export const getGovernmentAccount = async () => {
 };
 
 /**
- * Ensure gov account exists (bootstrap at server start)
+ * Apply savings interest to all active savings accounts.
+ * Uses governmentPolicies.savingsAPR (annual), applied monthly.
  */
-export const ensureGovernmentAccount         = async () => {
-    let [gov] = await db.select().from(governments).limit(1);
+export const applySavingsInterest = async () => {
+  try {
+    // 1. get current economic policy
+    const [policy] = await db
+      .select()
+      .from(governmentPolicies)
+      .orderBy(desc(governmentPolicies.id))
+      .limit(1);
 
-    if (!gov) {
-        // create a business chequing account for govt treasury
-        // First create a special government "player" entity
-        const [govPlayer] = await db
-            .insert(players)
-            .values({
-                playerId: "00000000-0000-0000-0000-000000000001", // Fixed UUID for government
-                firstName: "Government",
-                lastName: "Entity",
-                weight: 0,
-                height: 0,
-                hairColor: "N/A",
-                eyesColor: "N/A", 
-                hairStyle: "N/A",
-                skinColor: "N/A",
-                sex: "N/A",
-                birthDate: new Date(),
-                jobId: 0,
-                cash: 0,
-                bank: 0,
-            })
-            .returning();
+    if (!policy) return { success: false, message: "No government policy found" };
 
-        const [account] = await db
-            .insert(bankAccounts)
-            .values({
-                ownerId: govPlayer.playerId,
-                type: "business",
-                subType: "chequing",
-                balance: 1000000, // Start with 1M treasury
-                isActive: true,
-            })
-            .returning();
-
-        [gov] = await db
-            .insert(governments)
-            .values({ name: "Los Santos Government", accountId: account.id })
-            .returning();
+    const apr = policy.savingsAPR ?? 0;
+    if (apr <= 0) {
+      return { success: false, message: "No positive APR set for savings" };
     }
 
-    return gov;
+    const monthlyRate = apr / 100 / 12;
+
+    // 2. fetch all savings accounts
+    const savingsAccounts = await db
+      .select()
+      .from(bankAccounts)
+      .where(eq(bankAccounts.subType, "savings"));
+
+    // 3. apply interest
+    for (const acct of savingsAccounts) {
+      if (acct.balance > 0 && acct.isActive) {
+        const interest = Math.floor(acct.balance * monthlyRate);
+
+        if (interest > 0) {
+          await db.transaction(async (tx) => {
+            const [updated] = await tx
+              .update(bankAccounts)
+              .set({ balance: acct.balance + interest })
+              .where(eq(bankAccounts.id, acct.id))
+              .returning();
+
+            await logTransaction(
+              tx,
+              acct.ownerId,
+              acct.id,
+              interest,
+              "deposit",
+              "savings_interest"
+            );
+
+            return updated;
+          });
+        }
+      }
+    }
+
+    return { success: true, message: "Savings interest applied" };
+  } catch (error: any) {
+    console.error("Interest accrual failed", error);
+    return { success: false, message: error.message || "Interest accrual failed" };
+  }
 };

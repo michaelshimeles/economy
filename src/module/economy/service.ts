@@ -10,7 +10,7 @@ type TransactionType = "deposit" | "withdraw" | "transfer";
 // Let tx be either a transaction OR the db object
 type DBClient = NeonHttpDatabase<Record<string, never>> | PgTransaction<any, any, any>;
 
-const logTransaction = async (
+export const logTransaction = async (
   tx: DBClient,
   playerId: string,
   accountId: string | null,
