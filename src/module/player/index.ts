@@ -1,8 +1,5 @@
-import { eq } from "drizzle-orm";
 import type { Static } from "elysia";
 import { Elysia } from "elysia";
-import db from "../../db/db";
-import { players } from "../../db/schema";
 import { PlayerModel } from "./model";
 import { createPlayer, getAllPlayers, getPlayer, updatePlayer } from "./service";
 

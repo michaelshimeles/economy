@@ -1,6 +1,7 @@
 import db from "../../db/db";
 import { players } from "../../db/schema";
 import { eq } from "drizzle-orm";
+import { createBankAccount } from "../economy/bank/service";
 
 type NewPlayer = typeof players.$inferInsert
 type UpdatePlayer = Partial<typeof players.$inferInsert>
@@ -47,6 +48,10 @@ export const createPlayer = async (player: NewPlayer) => {
     try {
 
         const [newPlayer] = await db.insert(players).values({ ...player, birthDate: parsedBirthDate, playerId }).returning();
+
+        // Automatically create default personal bank accounts
+        await createBankAccount(newPlayer.playerId, "personal");
+
         return { success: true, newPlayer, message: "Player created successfully" };
     } catch (error) {
         console.error("Failed to create player", error);
