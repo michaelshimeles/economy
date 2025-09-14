@@ -129,22 +129,92 @@ This is a comprehensive economy system for a GTA RP server built with **Elysia.j
 
 ---
 
-## 🏦 Banking System (Service Layer Only)
+## 🏦 Banking System
 
-*Note: The banking functionality exists in the service layer but doesn't have exposed HTTP endpoints yet.*
+### GET `/bank/accounts/:playerId`
+- **Description:** Get all bank accounts for a specific player
+- **Authentication:** None
+- **Parameters:** `playerId` (string) - Player ID
+- **Response:** List of all accounts (chequing, savings, investing) for the player
 
-### Available Banking Services:
-- **Account Creation:** Create chequing, savings, and investing accounts for players
-- **Deposits:** Transfer cash from player to bank account
-- **Withdrawals:** Transfer money from bank account to player cash
-- **Transfers:** Move money between bank accounts
-- **Account Management:** Get accounts by owner, get account by ID
-- **Transaction Logging:** All banking operations are logged
+### GET `/bank/account/:accountId`
+- **Description:** Get specific bank account details by account ID
+- **Authentication:** None
+- **Parameters:** `accountId` (string) - Account ID
+- **Response:** Account details including balance, type, APR
+
+### POST `/bank/deposit`
+- **Description:** Deposit cash into a bank account
+- **Authentication:** None
+- **Request Body:**
+  ```json
+  {
+    "playerId": "string",
+    "accountId": "string", 
+    "amount": "number"
+  }
+  ```
+- **Response:** Transaction confirmation with updated balances
+
+### POST `/bank/withdraw`
+- **Description:** Withdraw money from bank account to cash
+- **Authentication:** None
+- **Request Body:**
+  ```json
+  {
+    "playerId": "string",
+    "accountId": "string",
+    "amount": "number"
+  }
+  ```
+- **Response:** Transaction confirmation with updated balances
+
+### POST `/bank/transfer`
+- **Description:** Transfer money between bank accounts
+- **Authentication:** None
+- **Request Body:**
+  ```json
+  {
+    "fromId": "string",
+    "toId": "string",
+    "amount": "number",
+    "playerId": "string"
+  }
+  ```
+- **Response:** Transfer confirmation with updated account balances
 
 ### Account Types:
-- **Chequing:** 0% APR, always active
-- **Savings:** Variable APR based on government policy
-- **Investing:** Controlled by government policy, can be enabled/disabled
+- **Chequing:** 0% APR, always active, primary account for daily transactions
+- **Savings:** Variable APR based on government policy, earns interest
+- **Investing:** Controlled by government policy, can be enabled/disabled, potential lockup periods
+
+---
+
+## 📊 Transaction History
+
+### GET `/transactions/player/:playerId`
+- **Description:** Get transaction history for a specific player
+- **Authentication:** None
+- **Parameters:** 
+  - `playerId` (string) - Player ID
+- **Query Parameters:**
+  - `limit` (optional, number) - Maximum number of transactions to return (default: 50)
+- **Response:** List of transactions ordered by most recent first
+
+### GET `/transactions/account/:accountId`
+- **Description:** Get transaction history for a specific bank account
+- **Authentication:** None
+- **Parameters:**
+  - `accountId` (string) - Account ID
+- **Query Parameters:**
+  - `limit` (optional, number) - Maximum number of transactions to return (default: 50)
+- **Response:** List of account transactions ordered by most recent first
+
+### GET `/transactions/:id`
+- **Description:** Get specific transaction details by transaction ID
+- **Authentication:** None
+- **Parameters:** `id` (string) - Transaction ID
+- **Response:** Single transaction object with full details
 
 ---
 
@@ -207,32 +277,42 @@ Authentication is handled by the `jwtAuth` middleware with role verification.
    - Versioned policy updates (historical tracking)
    - Interest rate controls
    - Tax rate management
-
-4. **Banking Infrastructure**
-   - Multi-account system per player
-   - Transaction logging
-   - Deposit/withdrawal operations
-   - Account type management (chequing, savings, investing)
-
-5. **Economic Controls**
    - Automated savings interest application
-   - Government treasury management
-   - Policy-driven account creation
 
-### 🔄 Service Layer (Backend Logic Ready):
-- **Banking Operations:** Full deposit, withdrawal, transfer system
-- **Account Management:** Create and manage multiple account types
-- **Transaction History:** Complete audit trail
-- **Interest Calculations:** Automated monthly interest application
+4. **Complete Banking System**
+   - Multi-account system per player (chequing, savings, investing)
+   - **NEW:** Full HTTP API for banking operations
+   - Deposit operations (cash → bank account)
+   - Withdrawal operations (bank account → cash)
+   - Transfer operations (bank account → bank account)
+   - Account management and querying
+   - Transaction logging with complete audit trail
+
+5. **Transaction History System**
+   - **NEW:** Complete transaction history API
+   - Player transaction history with pagination
+   - Account-specific transaction history
+   - Individual transaction lookup
+   - Chronological ordering (most recent first)
+
+6. **Economic Controls**
+   - Government treasury management
+   - Policy-driven account creation and management
+   - Interest rate controls affecting savings accounts
+
+### 🎯 Major Recent Additions:
+- **Banking HTTP Endpoints:** All banking operations now accessible via REST API
+- **Transaction History API:** Complete transaction audit and history system
+- **Enhanced Module Structure:** Proper separation of banking and transaction concerns
 
 ### 🚧 Potential Next Steps:
-1. **Expose Banking Endpoints:** Create HTTP endpoints for banking operations
+1. **Account Creation API:** HTTP endpoint for creating new bank accounts
 2. **Black Market System:** Currently has empty service file
-3. **Business Accounts:** Extend banking for business entities
+3. **Business Accounts:** Extend banking for business entities  
 4. **Investment System:** Implement the investing account functionality
 5. **Tax Collection:** Implement automatic tax deduction on transactions
-6. **Enhanced Security:** Add player-specific authentication
-7. **Transaction History API:** Endpoints to view transaction history
+6. **Enhanced Security:** Add player-specific authentication for banking operations
+7. **Advanced Transaction Features:** Transaction categories, descriptions, recurring transactions
 
 ---
 
@@ -246,10 +326,26 @@ Authentication is handled by the `jwtAuth` middleware with role verification.
 
 ---
 
-## 📝 Recent Fixes
+## 📝 Recent Fixes & Updates
 
-- **Routing Issue Resolved:** Fixed missing module imports in main application
+### Major System Expansion:
+- **Banking HTTP API:** Complete banking system now exposed via REST endpoints
+- **Transaction History API:** Full transaction audit and history system implemented
+- **Module Structure:** Enhanced separation of concerns with dedicated banking and transaction modules
+
+### Previous Fixes:
+- **Routing Issue Resolved:** Fixed missing module imports in main application  
 - **Module Registration:** All available modules now properly registered
-- **Endpoint Accessibility:** `/v1/government/policy` and other endpoints now accessible
+- **Endpoint Accessibility:** All endpoints now accessible and functional
 
-The system is now fully functional with all implemented endpoints accessible via the API.
+## 📊 API Summary
+
+**Total HTTP Endpoints: 19**
+- **Root:** 1 endpoint
+- **Players:** 4 endpoints (CRUD operations)
+- **Jobs:** 3 endpoints (create, assign, pay)
+- **Government:** 3 endpoints (policy management)
+- **Banking:** 5 endpoints (accounts, deposit, withdraw, transfer)
+- **Transactions:** 3 endpoints (history and audit)
+
+The system is now a comprehensive economy platform with full banking capabilities, transaction history, and government economic controls.

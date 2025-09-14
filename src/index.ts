@@ -3,6 +3,8 @@ import { player } from "./module/player";
 import { government } from "./module/government";
 import { jobs } from "./module/job";
 import { openapi } from "@elysiajs/openapi";
+import { transactionRoutes } from "./module/economy/transactions";
+import { bankRoutes } from "./module/economy/bank";
 
 const app =
     new Elysia({
@@ -13,6 +15,8 @@ const app =
         .use(player)
         .use(government)
         .use(jobs)
+        .use(bankRoutes)
+        .use(transactionRoutes)
         .listen(3000);
 
 
