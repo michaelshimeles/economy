@@ -3,6 +3,15 @@ import db from "../../db/db";
 import { jobs, players, governmentPolicies, bankAccounts, governments } from "../../db/schema";
 import { logTransaction } from "../economy/service";
 
+export const getAllJobs = async () => {
+    try {
+        const allJobs = await db.select().from(jobs);
+        return { success: true, jobs: allJobs, message: "Jobs fetched successfully" };
+    } catch (error: any) {
+        return { success: false, message: error.message };
+    }
+};
+
 export const createJob = async (name: string, salary: number) => {
     try {
         const [job] = await db.insert(jobs).values({ name, salary }).returning();
@@ -67,28 +76,54 @@ export const paySalary = async (playerId: string) => {
 
         if (!govAccount) return { success: false, message: "Government account not found" };
 
-        // Transfer funds atomically
-        const result = await db.transaction(async (tx) => {
-            // Deposit net salary to player
-            const [updatedPlayerAccount] = await tx
-                .update(bankAccounts)
-                .set({ balance: playerAccount.balance + netSalary })
-                .where(eq(bankAccounts.id, playerAccount.id))
-                .returning();
+        // Transfer funds (sequential operations since transactions not supported)
+        // Deposit net salary to player
+        const [updatedPlayerAccount] = await db
+            .update(bankAccounts)
+            .set({ balance: playerAccount.balance + netSalary })
+            .where(eq(bankAccounts.id, playerAccount.id))
+            .returning();
 
-            await logTransaction(tx, playerId, playerAccount.id, netSalary, "deposit", "paycheck");
+        await logTransaction(db, playerId, playerAccount.id, netSalary, "deposit", "paycheck");
 
-            // Deposit tax to government treasury
-            const [updatedGovAccount] = await tx
-                .update(bankAccounts)
-                .set({ balance: govAccount.balance + taxAmount })
-                .where(eq(bankAccounts.id, govAccount.id))
-                .returning();
+        // Deposit tax to government treasury
+        const [updatedGovAccount] = await db
+            .update(bankAccounts)
+            .set({ balance: govAccount.balance + taxAmount })
+            .where(eq(bankAccounts.id, govAccount.id))
+            .returning();
 
-            await logTransaction(tx, "government", govAccount.id, taxAmount, "deposit", "income_tax");
+        await logTransaction(db, "00000000-0000-0000-0000-000000000000", govAccount.id, taxAmount, "deposit", "income_tax");
 
-            return { playerAccount: updatedPlayerAccount, govAccount: updatedGovAccount };
-        });
+        // Update player's total bank balance
+        const playerAccounts = await db
+            .select()
+            .from(bankAccounts)
+            .where(eq(bankAccounts.ownerId, playerId));
+        
+        const totalBankBalance = playerAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        
+        const [updatedPlayer] = await db
+            .update(players)
+            .set({ bank: totalBankBalance })
+            .where(eq(players.playerId, playerId))
+            .returning();
+
+        // Update government's total bank balance
+        const govAccounts = await db
+            .select()
+            .from(bankAccounts)
+            .where(eq(bankAccounts.ownerId, "00000000-0000-0000-0000-000000000000"));
+        
+        const govTotalBankBalance = govAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+        
+        const [updatedGovPlayer] = await db
+            .update(players)
+            .set({ bank: govTotalBankBalance })
+            .where(eq(players.playerId, "00000000-0000-0000-0000-000000000000"))
+            .returning();
+
+        const result = { playerAccount: updatedPlayerAccount, govAccount: updatedGovAccount, player: updatedPlayer };
 
         return {
             success: true,

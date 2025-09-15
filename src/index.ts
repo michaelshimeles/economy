@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 import { player } from "./module/player";
 import { government } from "./module/government";
 import { jobs } from "./module/job";
@@ -11,6 +12,12 @@ const app =
         prefix: '/v1',
         normalize: true
     })
+        .use(cors({
+            origin: 'http://localhost:3001',
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+            credentials: true
+        }))
         .use(openapi())
         .use(player)
         .use(government)

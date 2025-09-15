@@ -37,7 +37,6 @@ export const updatePolicy = async (updates: Partial<typeof governmentPolicies.$i
     }
 };
 
-
 /**
  * Get the government's treasury account
  */
@@ -91,24 +90,35 @@ export const applySavingsInterest = async () => {
         const interest = Math.floor(acct.balance * monthlyRate);
 
         if (interest > 0) {
-          await db.transaction(async (tx) => {
-            const [updated] = await tx
-              .update(bankAccounts)
-              .set({ balance: acct.balance + interest })
-              .where(eq(bankAccounts.id, acct.id))
-              .returning();
+          // Update account balance
+          const [updated] = await db
+            .update(bankAccounts)
+            .set({ balance: acct.balance + interest })
+            .where(eq(bankAccounts.id, acct.id))
+            .returning();
 
-            await logTransaction(
-              tx,
-              acct.ownerId,
-              acct.id,
-              interest,
-              "deposit",
-              "savings_interest"
-            );
+          // Log transaction
+          await logTransaction(
+            db,
+            acct.ownerId,
+            acct.id,
+            interest,
+            "deposit",
+            "savings_interest"
+          );
 
-            return updated;
-          });
+          // Update player's total bank balance
+          const playerAccounts = await db
+            .select()
+            .from(bankAccounts)
+            .where(eq(bankAccounts.ownerId, acct.ownerId));
+          
+          const totalBankBalance = playerAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+          
+          await db
+            .update(players)
+            .set({ bank: totalBankBalance })
+            .where(eq(players.playerId, acct.ownerId));
         }
       }
     }
